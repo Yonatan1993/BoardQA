@@ -107,7 +107,7 @@ public class Main {
 
     }
 
-    
+
     //TODO  ask asaf how to handle this exception
     public static void RelayOutputAndInputTest() throws InterruptedException, TimeoutException {
         for (int i = 0; i < 4; i++) {

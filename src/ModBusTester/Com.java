@@ -17,6 +17,7 @@ public class Com implements SerialPortEventListener {
     static CommPortIdentifier portId;
     static SerialPort serialPort;
     static OutputStream outputStream;
+
     final boolean isWithCRC = true;
     final String PORT = "COM5";
     final int BOUDRATE = 9600;

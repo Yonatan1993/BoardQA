@@ -28,6 +28,7 @@ public class ModbusMessage {
         return data;
     }
 
+
     public int getCrc() {
         return crc;
     }

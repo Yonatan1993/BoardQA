@@ -47,6 +47,7 @@ public class MessageParser {
         modbusMessage.byteCount = iter.next();
         int lengthOfData = modbusMessage.byteCount;
         modbusMessage.data = 0;
+
         for (int idx = 0; idx < lengthOfData; idx++) {
             modbusMessage.data |= iter.next() << (8 * (lengthOfData - idx - 1));
         }
