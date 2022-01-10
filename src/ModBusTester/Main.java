@@ -124,7 +124,7 @@ public class Main {
 
             //Give pulse to relay number i
             com.relayShort((byte) i, 1000);
-//            message = listenToModbusResponse();
+
             System.out.println("Message after write code: " + message);
 
 

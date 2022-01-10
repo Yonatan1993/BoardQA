@@ -89,6 +89,7 @@ public class Com implements SerialPortEventListener {
         return isWithCRC ? writeDataWithCRC(dataBytes) : dataBytes;
     }
 
+
     public void write(byte[] output, String msg) {                      // this method prints out to the buffer.
         System.out.println(msg + " Send : " + bytesToHexStr(output).toLowerCase());
         try {
