@@ -107,32 +107,12 @@ public class Main {
 
     }
 
-    /**
-     *
-     * @throws InterruptedException
-     * @throws TimeoutException
-     */
+    
     //TODO  ask asaf how to handle this exception
     public static void RelayOutputAndInputTest() throws InterruptedException, TimeoutException {
         for (int i = 0; i < 4; i++) {
 
-//            byte[] dataBytes = {0x01, 0x02, 0x00, 0x00, 0x00, 0x08};
-//            com.write(com.writeDataWithCRC(dataBytes), " Read Inputs Before Pulse ");
-//            MessageParser messageParser = new MessageParser();
-//            int status = 0;
-//
-//            do {
-//                List<Byte> newBytes = com.getQueue().poll(50, TimeUnit.MILLISECONDS);
-//                if (newBytes != null) {
-//                    status = messageParser.parseData(newBytes);
-//                    //   System.out.println("waiting because not big enough");
-//                } else {
-//                    status = -1;
-//                    //System.out.println("waiting because null");
-//                }
-//            } while (status != 0);
-//
-//            ModbusMessage messageBeforeOutput = messageParser.getMessage();
+
 
             com.getQueue().clear();
             byte[] setRelayCommand = com.setRelayState(false, (byte) i); // make sure the relay is off
@@ -148,21 +128,7 @@ public class Main {
             System.out.println("Message after write code: " + message);
 
 
-            //Read Inputs of all relays in relayShort2
-//            com.write(com.writeDataWithCRC(dataBytes), " Read Inputs After Pulse ");
-//            messageParser = new MessageParser();
-//
-//            do {
-//                List<Byte> newBytes = com.getQueue().poll(50, TimeUnit.MILLISECONDS);
-//                if (newBytes != null) {
-//                    status = messageParser.parseData(newBytes);
-//                    //   System.out.println("waiting because not big enough");
-//                } else {
-//                    status = -1;
-//                    //System.out.println("waiting because null");
-//                }
-//            } while (status != 0);
-//            ModbusMessage messageAfterOutput = messageParser.getMessage();
+
             ModbusMessage messageAfterOutput = readInputs();
             System.out.println("Message after status code: " + messageAfterOutput);
 

@@ -117,7 +117,7 @@ public class Com implements SerialPortEventListener {
         System.arraycopy(crcBytes, 0, combinedData, dataBytesLen, crcBytesLen);
 
         return combinedData;
-//    this.communication.write(combinedData);
+
     }
 
     static class CRC16Modbus {
