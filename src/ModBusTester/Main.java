@@ -27,14 +27,13 @@ import java.util.logging.Logger;
 
 public class Main {
 
-    public static Com com;
+
     public static ModbusMessage modbusMessage;
     public static Testim testim;
 
 
     static {
         try {
-            com = new Com();
             modbusMessage = new ModbusMessage();
             testim = new Testim();
         } catch (TooManyListenersException e) {
@@ -97,10 +96,6 @@ public class Main {
         System.out.println("0- Quit MODBUSTESTER");
 
     }
-
-
-
-
 
     //TODO  ask asaf how to handle this exception
 
