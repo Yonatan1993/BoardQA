@@ -28,10 +28,15 @@ import java.util.logging.Logger;
 public class Main {
 
     public static Com com;
+    public static ModbusMessage modbusMessage;
+    public static Testim testim;
+
 
     static {
         try {
             com = new Com();
+            modbusMessage = new ModbusMessage();
+            testim = new Testim();
         } catch (TooManyListenersException e) {
             e.printStackTrace();
         }
@@ -48,7 +53,7 @@ public class Main {
     ;
 
     //main
-    public static void main(String[] args) throws InterruptedException, TimeoutException {
+    public static void main(String[] args) throws InterruptedException, TimeoutException, TooManyListenersException {
 
         boolean quit = false;
         int choose;
@@ -67,10 +72,10 @@ public class Main {
                     break;
 
                 case 2:
-                    RelayOutputTest();
+                    testim.RelayOutputTest(modbusMessage);
                     break;
                 case 3:
-                    RelayOutputAndInputTest();
+                    testim.RelayOutputAndInputTest(modbusMessage);
                     break;
 
                 default:
@@ -94,115 +99,11 @@ public class Main {
     }
 
 
-    public static void RelayOutputTest() throws InterruptedException {
-        for (int i = 0; i < 2; i++) {
-            com.relayShort((byte) i, 1000);
 
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Com.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-
-    }
 
 
     //TODO  ask asaf how to handle this exception
-    public static void RelayOutputAndInputTest() throws InterruptedException, TimeoutException {
-        for (int i = 0; i < 4; i++) {
 
-
-
-            com.getQueue().clear();
-            byte[] setRelayCommand = com.setRelayState(false, (byte) i); // make sure the relay is off
-            com.write(setRelayCommand,"We shouldn't use this");
-            ModbusMessage message = listenToModbusResponse(); // response msg from salve that the coil if off
-            System.out.println(message);
-            ModbusMessage messageBeforeOutput = readInputs();
-            System.out.println("Message before input: " + messageBeforeOutput);
-
-            //Give pulse to relay number i
-            com.relayShort((byte) i, 1000);
-
-            System.out.println("Message after write code: " + message);
-
-
-
-            ModbusMessage messageAfterOutput = readInputs();
-            System.out.println("Message after status code: " + messageAfterOutput);
-
-            RelayStatus status_e = cheackInputsArrays(messageBeforeOutput, messageAfterOutput, i);
-            if (status_e == RelayStatus.ok)
-                System.out.println(ANSI_BLUE + "Realay and input number" + (i + 1) + "is valid" + ANSI_RESET);
-            else if (status_e == RelayStatus.outPutError)
-                System.out.println("Out Put Relay Error");
-            else
-                System.out.println(ANSI_RED + "Input Output Error in " + status_e.toString() + ANSI_RESET);
-            System.out.println("*******************************************");
-
-
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Com.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-
-
-    }
-
-    /**
-     * This function checks for corralation between the input state before the relay short, and the input state after the relay short
-     * @param before: message from inputs before we changed the relay state.
-     * @param after
-     * @param i
-     * @return
-     */
-    public static RelayStatus cheackInputsArrays(ModbusMessage before, ModbusMessage after, int i) {
-        int relayIndex = i + 1;
-        if ((before.getData()) != 0) {
-            System.out.println("Relay Data befote Pulse wasn`t 00 ");
-            return RelayStatus.outPutError;
-
-        } else {
-
-            switch (relayIndex) {
-                case 1:
-
-                    if (after.getData() == 8)
-                        return RelayStatus.ok;
-                    else
-                        return RelayStatus.Relay1;
-
-
-                case 2:
-                    if (after.getData() == 4)
-                        return RelayStatus.ok;
-                    else
-                        return RelayStatus.Relay2;
-
-
-                case 3:
-                    if (after.getData() == 2)
-                        return RelayStatus.ok;
-                    else
-                        return RelayStatus.Relay3;
-
-
-                case 4:
-                    if (after.getData() == 1)
-                        return RelayStatus.ok;
-                    else
-                        return RelayStatus.Relay4;
-                default:
-                    return RelayStatus.otherError;
-
-            }
-        }
-
-
-    }
 
     public static String[] bytesToStr(Byte[] bytes, boolean isHex, int length) {
         String[] rs = new String[8];
@@ -213,39 +114,7 @@ public class Main {
         return rs;
     }
 
-    public static ModbusMessage readInputs() throws InterruptedException, TimeoutException {
-        byte[] dataBytes = {0x01, 0x02, 0x00, 0x00, 0x00, 0x08};
-        com.write(com.writeDataWithCRC(dataBytes), " Read Inputs Before Pulse ");
-        ModbusMessage messageBeforeOutput = listenToModbusResponse();
-        return messageBeforeOutput;
 
-    }
-
-    private static ModbusMessage listenToModbusResponse() throws InterruptedException, TimeoutException {
-        MessageParser messageParser = new MessageParser();
-        int status = 0;
-        do {
-            List<Byte> newBytes = com.getQueue().poll(50, TimeUnit.MILLISECONDS);
-            if (newBytes != null) {
-                status = messageParser.parseData(newBytes);
-                //   System.out.println("waiting because not big enough");
-            } else {
-                status = -1;
-                try {
-                    throw new TimeoutException("No Response from modbus");
-                } catch (TimeoutException e) {
-                    continue;
-
-                }
-
-            }
-
-            //System.out.println("waiting because null");
-        } while (status != 0);
-
-        ModbusMessage messageBeforeOutput = messageParser.getMessage();
-        return messageBeforeOutput;
-    }
 
 
 }

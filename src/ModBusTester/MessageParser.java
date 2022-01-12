@@ -4,6 +4,7 @@ package ModBusTester;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TooManyListenersException;
 
 public class MessageParser {
 
@@ -29,7 +30,7 @@ public class MessageParser {
     }
 
     //TODO HERE I ASSUMING THAT THE LENGTH IS 6 bYTE. WHAT IF IT WILL BE LARGER?
-    public int parseData(List<Byte> data) {
+    public int parseData(List<Byte> data) throws TooManyListenersException {
 
         this.data.addAll(data);
         if (data.size() < 6) {
@@ -39,7 +40,7 @@ public class MessageParser {
         return 0;
     }
 
-    private void finalParsing() {
+    private void finalParsing() throws TooManyListenersException {
         Iterator<Byte> iter = data.iterator();
         modbusMessage = new ModbusMessage();
         modbusMessage.address = iter.next();
