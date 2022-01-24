@@ -10,7 +10,7 @@ public class MessageParser {
 
     public List<Byte> data;
     final int dataLength = 16;
-    private ModbusMessage modbusMessage;
+//    private ModbusHandler modbusHandler;
 
     public MessageParser() {
 
@@ -40,23 +40,35 @@ public class MessageParser {
         return 0;
     }
 
-    private void finalParsing() throws TooManyListenersException {
+    public class ModbusMessage {
+        int address;
+        int command;
+        int byteCount;
+        int dataLength;
+        byte[] data;
+        int crc;
+    }
+
+    ModbusMessage message;
+
+    private void finalParsing() {
+        ModbusMessage modbusMessage = new ModbusMessage();
         Iterator<Byte> iter = data.iterator();
-        modbusMessage = new ModbusMessage();
         modbusMessage.address = iter.next();
         modbusMessage.command = iter.next();
         modbusMessage.byteCount = iter.next();
         int lengthOfData = modbusMessage.byteCount;
-        modbusMessage.data = 0;
+        modbusMessage.data = new byte[lengthOfData];
 
         for (int idx = 0; idx < lengthOfData; idx++) {
-            modbusMessage.data |= iter.next() << (8 * (lengthOfData - idx - 1));
+            modbusMessage.data[idx] = iter.next();
         }
         modbusMessage.crc = ((iter.next() << 8) | iter.next());
+        this.message = modbusMessage;
     }
 
 
     public ModbusMessage getMessage() {
-        return modbusMessage;
+        return this.message;
     }
 }

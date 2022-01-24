@@ -1,15 +1,15 @@
 package ModBusTester;
 
-import com.sun.xml.internal.bind.v2.TODO;
-
 import javax.comm.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.TooManyListenersException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 public class Com implements SerialPortEventListener {
 
@@ -17,7 +17,7 @@ public class Com implements SerialPortEventListener {
     public SerialPort serialPort;
     public OutputStream outputStream;
 
-    final String PORT = "COM5";
+    final String PORT = "COM4";
     final int BOUDRATE = 9600;
     final int capacityOfQueue = 16;
 
@@ -50,6 +50,7 @@ public class Com implements SerialPortEventListener {
                 System.out.println("Port number " + portId.getName() + " not available");
             }
 
+
             serialPort.addEventListener(this);
             serialPort.notifyOnDataAvailable(true);
 
@@ -58,6 +59,33 @@ public class Com implements SerialPortEventListener {
 
 
     }
+
+    public void write(byte[] output, String msg) {                      // this method prints out to the buffer.
+        System.out.println(msg + " :  " + bytesToHexStr(output).toLowerCase());
+        try {
+            outputStream.write(output);
+            outputStream.flush();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } catch (NullPointerException ex) {
+            ex.printStackTrace();
+            System.out.println("write method error");
+        }
+    }
+
+    public static String bytesToHexStr(byte[] bytes) {
+        return bytesToStr(bytes, true, bytes.length);
+    }
+
+    public static String bytesToStr(byte[] bytes, boolean isHex, int length) {
+        String rs = "";
+        for (int i = 0; i < length; i++)
+            rs += (isHex ? String.format("%02X ", bytes[i]) : bytes[i]);
+
+        return rs;
+    }
+
+
 
 
     @Override

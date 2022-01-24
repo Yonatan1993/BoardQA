@@ -1,6 +1,5 @@
 package ModBusTester;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Timer;
@@ -10,7 +9,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class ModbusMessage {
+public class ModbusHandler implements Cloneable {
 
     byte address;
     byte command;
@@ -20,10 +19,12 @@ public class ModbusMessage {
     int crc;
     final boolean isWithCRC = true;
     BlockingQueue<List<Byte>> messageBuffer;
-    Com com;
+    private Com com;
     static OutputStream outputStream;
+    private static final ModbusHandler.CRC16Modbus Crc = new ModbusHandler.CRC16Modbus();
 
-    public ModbusMessage() throws TooManyListenersException {
+
+    public ModbusHandler() throws TooManyListenersException {
         com = new Com();
     }
 
@@ -48,17 +49,23 @@ public class ModbusMessage {
         return crc;
     }
 
+    public Object clone() throws CloneNotSupportedException
+    {
+        return super.clone();
+    }
+
 
     public void relayShort(byte relayNumber, int timeout) throws InterruptedException {
-        byte[] status = setRelayState(true, (byte) relayNumber);
-        write(status, " relay " + relayNumber + " ON ");
+        byte[] status = buildSetRelayStateCommand(true, (byte) relayNumber);
+        com.write(status, " relay " + (relayNumber + 1) + " ON ");
         messageBuffer= com.getQueue();                                         //TODO: ASK ASAF
         List<Byte> poll = messageBuffer.poll(50, TimeUnit.MILLISECONDS);
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                byte[] status = setRelayState(false, (byte) relayNumber);
-                write(status, " relay " + relayNumber + " OFF ");
+                byte[] status = buildSetRelayStateCommand(false, (byte) relayNumber);
+               com.write(status, " relay " + (relayNumber+1) + " OFF ");
+                System.out.println();
                 try {
                     messageBuffer= com.getQueue();                                         //TODO: ASK ASAF
                     List<Byte> poll = messageBuffer.poll(50, TimeUnit.MILLISECONDS);
@@ -70,7 +77,7 @@ public class ModbusMessage {
         }, timeout);
     }
 
-    public byte[] setRelayState(boolean power, byte relayNumber) {
+    private byte[] buildSetRelayStateCommand(boolean power, byte relayNumber) {
         byte[] dataBytes = {0x01,
                 0x05,
                 0x00,
@@ -81,20 +88,16 @@ public class ModbusMessage {
         return isWithCRC ? writeDataWithCRC(dataBytes) : dataBytes;
     }
 
-    public void write(byte[] output, String msg) {                      // this method prints out to the buffer.
-        System.out.println(msg + " Send : " + bytesToHexStr(output).toLowerCase());
-        try {
-            com.outputStream.write(output);
-           com.outputStream.flush();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        } catch (NullPointerException ex) {
-            ex.printStackTrace();
-            System.out.println("write method error");
-        }
+    public void setRelayState(boolean power,byte relayNumber) throws TooManyListenersException, InterruptedException, TimeoutException {
+        byte[] bytes = buildSetRelayStateCommand(power, relayNumber);
+        com.write(bytes,"Sending relay state command to modbus unit");
+        //TODO: Listen to response and throw exception if timeout occurs.
+        listenToModbusResponse(); // response msg from salve that the coil if off, TODO:NEED TO CHECK THE RESPONSE
+
     }
 
-    private static final ModbusMessage.CRC16Modbus Crc = new ModbusMessage.CRC16Modbus();
+
+
 
     public  byte[] writeDataWithCRC(byte[] dataBytes) {
         Crc.reset();
@@ -110,6 +113,10 @@ public class ModbusMessage {
 
         return combinedData;
 
+    }
+
+    public void cleanAllMessagesInQueue() {
+        com.getQueue().clear();
     }
 
     static class CRC16Modbus {
@@ -168,33 +175,36 @@ public class ModbusMessage {
     }
 
 
-    public static String bytesToHexStr(byte[] bytes) {
-        return bytesToStr(bytes, true, bytes.length);
-    }
+//    public  ModbusMessage readInputs() throws InterruptedException, TimeoutException, TooManyListenersException {
+//        byte[] dataBytes = {0x01, 0x02, 0x00, 0x00, 0x00, 0x08};
+//        com.write(writeDataWithCRC(dataBytes), " Read Inputs Before Pulse ");
+//        ModbusMessage messageBeforeOutput = listenToModbusResponse();
+//        return messageBeforeOutput;
+//
+//    }
 
-    public static String bytesToStr(byte[] bytes, boolean isHex, int length) {
-        String rs = "";
-        for (int i = 0; i < length; i++)
-            rs += (isHex ? String.format("%02X ", bytes[i]) : bytes[i]);
-
-        return rs;
-    }
-
-    public  ModbusMessage readInputs() throws InterruptedException, TimeoutException, TooManyListenersException {
+    public int readInputs() throws InterruptedException, TimeoutException, TooManyListenersException {
         byte[] dataBytes = {0x01, 0x02, 0x00, 0x00, 0x00, 0x08};
-        write(writeDataWithCRC(dataBytes), " Read Inputs Before Pulse ");
-        ModbusMessage messageBeforeOutput = listenToModbusResponse();
-        return messageBeforeOutput;
+        com.write(writeDataWithCRC(dataBytes), " Sending read input command: ");
+        MessageParser.ModbusMessage modbusMessage = listenToModbusResponse();
+        int value = 0;
+        for (byte b : modbusMessage.data) {
+            value = (value << 8) + (b & 0xFF);
+        }
+
+        return value;
 
     }
 
-    public   ModbusMessage listenToModbusResponse() throws InterruptedException, TimeoutException, TooManyListenersException {
+    private MessageParser.ModbusMessage listenToModbusResponse() throws InterruptedException, TimeoutException, TooManyListenersException {
         MessageParser messageParser = new MessageParser();
         int status = 0;
         do {
             List<Byte> newBytes = com.getQueue().poll(50, TimeUnit.MILLISECONDS);
             if (newBytes != null) {
                 status = messageParser.parseData(newBytes);
+                MessageParser.ModbusMessage message = messageParser.getMessage();
+                return message;
                 //   System.out.println("waiting because not big enough");
             } else {
                 status = -1;
@@ -207,8 +217,9 @@ public class ModbusMessage {
             //System.out.println("waiting because null");
         } while (status != 0);
 
-        ModbusMessage messageBeforeOutput = messageParser.getMessage();
-        return messageBeforeOutput;
+//        ModbusMessage messageBeforeOutput = messageParser.getMessage();
+//        return messageBeforeOutput;
+        return null;
     }
 
     @Override

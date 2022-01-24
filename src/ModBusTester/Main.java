@@ -1,13 +1,8 @@
 package ModBusTester;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
 import java.util.TooManyListenersException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /*
@@ -28,14 +23,14 @@ import java.util.logging.Logger;
 public class Main {
 
 
-    public static ModbusMessage modbusMessage;
-    public static Testim testim;
+    public static ModbusHandler modbusHandler;
+    public static TestManager testManager;
 
 
     static {
         try {
-            modbusMessage = new ModbusMessage();
-            testim = new Testim();
+            modbusHandler = new ModbusHandler();
+            testManager = new TestManager();
         } catch (TooManyListenersException e) {
             e.printStackTrace();
         }
@@ -43,16 +38,16 @@ public class Main {
 
     public static Scanner s = new Scanner(System.in);
 
-    public enum RelayStatus {Relay1, Relay2, Relay3, Relay4, outPutError, otherError, ok}
-
-    public static final String ANSI_RESET = "\u001B[0m";
-    public static final String ANSI_RED = "\u001B[31m";
-    public static final String ANSI_BLUE = "\u001B[34m";
+//    public enum RelayStatus {Relay1, Relay2, Relay3, Relay4, outPutError, otherError, ok}
+//
+//    public static final String ANSI_RESET = "\u001B[0m";
+//    public static final String ANSI_RED = "\u001B[31m";
+//    public static final String ANSI_BLUE = "\u001B[34m";
 
     ;
 
     //main
-    public static void main(String[] args) throws InterruptedException, TimeoutException, TooManyListenersException {
+    public static void main(String[] args) throws InterruptedException, TimeoutException, TooManyListenersException, CloneNotSupportedException {
 
         boolean quit = false;
         int choose;
@@ -71,10 +66,10 @@ public class Main {
                     break;
 
                 case 2:
-                    testim.RelayOutputTest(modbusMessage);
+                    testManager.relayOutputTest(modbusHandler);
                     break;
                 case 3:
-                    testim.RelayOutputAndInputTest(modbusMessage);
+                    testManager.relayOutputAndInputTest(modbusHandler);
                     break;
 
                 default:
@@ -99,15 +94,15 @@ public class Main {
 
     //TODO  ask asaf how to handle this exception
 
-
-    public static String[] bytesToStr(Byte[] bytes, boolean isHex, int length) {
-        String[] rs = new String[8];
-        for (int i = 0; i < length; i++)
-            rs[i] = (isHex ? String.format("%02X", bytes[i]) : String.valueOf(bytes[i]));
-        System.out.println("rs=" + Arrays.toString(rs));
-        //return rs.split("");
-        return rs;
-    }
+//
+//    public static String[] bytesToStr(Byte[] bytes, boolean isHex, int length) {
+//        String[] rs = new String[8];
+//        for (int i = 0; i < length; i++)
+//            rs[i] = (isHex ? String.format("%02X", bytes[i]) : String.valueOf(bytes[i]));
+//        System.out.println("rs=" + Arrays.toString(rs));
+//        //return rs.split("");
+//        return rs;
+//    }
 
 
 
